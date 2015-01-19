@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>4d7c0716-2d99-4e12-b2e0-5bc4498c4a10</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>A2\submitA2.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>audio-001</Name>
+    <RootNamespace>audio-001</RootNamespace>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
+    <InterpreterVersion>2.7</InterpreterVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="A1\" />
+    <Folder Include="A2\" />
+    <Folder Include="A3\" />
+    <Folder Include="A4\" />
+    <Folder Include="A5\" />
+    <Folder Include="A6\" />
+    <Folder Include="Waves\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="A1\A1Part1.py" />
+    <Compile Include="A1\A1Part2.py" />
+    <Compile Include="A1\A1Part3.py" />
+    <Compile Include="A1\submitA1.py" />
+    <Compile Include="A2\A2Part1.py" />
+    <Compile Include="A2\A2Part2.py" />
+    <Compile Include="A2\A2Part3.py" />
+    <Compile Include="A2\A2Part4.py" />
+    <Compile Include="A2\A2Part5.py" />
+    <Compile Include="A2\Notes.py" />
+    <Compile Include="A2\submitA2.py" />
+    <Compile Include="A3\A3Part1.py" />
+    <Compile Include="A3\A3Part2.py" />
+    <Compile Include="A3\A3Part3.py" />
+    <Compile Include="A3\A3Part4.py" />
+    <Compile Include="A3\A3Part5.py" />
+    <Compile Include="A3\submitA3.py" />
+    <Compile Include="A4\A4Part1.py" />
+    <Compile Include="A4\A4Part2.py" />
+    <Compile Include="A4\A4Part3.py" />
+    <Compile Include="A4\A4Part4.py" />
+    <Compile Include="A4\submitA4.py" />
+    <Compile Include="A5\A5Part1.py" />
+    <Compile Include="A5\A5Part2.py" />
+    <Compile Include="A5\A5Part3.py" />
+    <Compile Include="A5\A5Part4.py" />
+    <Compile Include="A5\A5Part5.py" />
+    <Compile Include="A5\submitA5.py" />
+    <Compile Include="A6\A6Part1.py" />
+    <Compile Include="A6\A6Part2.py" />
+    <Compile Include="A6\A6Part3.py" />
+    <Compile Include="A6\A6Part4.py" />
+    <Compile Include="A6\submitA6.py" />
+    <Compile Include="A1\Notes.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="A1\A1-Python_and_sounds.pdf" />
+    <Content Include="A1\Programming assignment - Guidelines.pdf" />
+    <Content Include="A1\testInputA1.pkl" />
+    <Content Include="A2\A2-Sinusoids_and_DFT.pdf" />
+    <Content Include="A2\Programming assignment - Guidelines.pdf" />
+    <Content Include="A2\testInputA2.pkl" />
+    <Content Include="A3\.DS_Store" />
+    <Content Include="A3\A3-Fourier_properties.pdf" />
+    <Content Include="A3\Programming assignment - Guidelines.pdf" />
+    <Content Include="A3\testInputA3.pkl" />
+    <Content Include="A4\A4-STFT.pdf" />
+    <Content Include="A4\Programming assignment - Guidelines.pdf" />
+    <Content Include="A4\testInputA4.pkl" />
+    <Content Include="A5\A5-sineModel.pdf" />
+    <Content Include="A5\testInputA5.pkl" />
+    <Content Include="A6\A6-harmonicModel.pdf" />
+    <Content Include="A6\Programming assignment - Guidelines.pdf" />
+    <Content Include="A6\testInputA6.pkl" />
+    <Content Include="Waves\196765__xserra__piano-phrase.wav" />
+    <Content Include="Waves\204179__xserra__oboe-a4.wav" />
+    <Content Include="Waves\204182__xserra__sax-phrase.wav" />
+    <Content Include="Waves\205015__xserra__ocean.wav" />
+    <Content Include="Waves\205513__xserra__flute-a4.wav" />
+    <Content Include="Waves\205822__xserra__organ-c3.wav" />
+    <Content Include="Waves\205882__xserra__mridangam.wav" />
+    <Content Include="Waves\217543__xserra__orchestra-fragment.wav" />
+    <Content Include="Waves\218475__xserra__impulse-response.wav" />
+    <Content Include="Waves\218917__xserra__sine-490.wav" />
+    <Content Include="Waves\218918__xserra__sine-440.wav" />
+    <Content Include="Waves\218919__xserra__sine-440-490.wav" />
+    <Content Include="Waves\218920__xserra__bendir.wav" />
+    <Content Include="Waves\219759__xserra__vibraphone-c6.wav" />
+    <Content Include="Waves\219953__xserra__vignesh.wav" />
+    <Content Include="Waves\220961__xserra__carnatic.wav" />
+    <Content Include="Waves\223370__xserra__cello-double-string-phrase.wav" />
+    <Content Include="Waves\232357__xserra__rain.wav" />
+    <Content Include="Waves\242160__xserra__cello-phrase.wav" />
+    <Content Include="Waves\242162__xserra__cello-phrase-residual.wav" />
+    <Content Include="Waves\242163__xserra__cello-phrase-pitch-transformation.wav" />
+    <Content Include="Waves\242164__xserra__cello-phrase-harmonics.wav" />
+    <Content Include="Waves\242165__xserra__cello-phrase-f0.wav" />
+    <Content Include="Waves\242166__xserra__cello-phrase-weird-transformation.wav" />
+    <Content Include="Waves\242167__xserra__cello-phrase-synthesis.wav" />
+    <Content Include="Waves\242168__xserra__cello-phrase-stochastic.wav" />
+    <Content Include="Waves\254358__xserra__speech-male.wav" />
+    <Content Include="Waves\254359__xserra__speech-male-hpsmodel-stochastic.wav" />
+    <Content Include="Waves\254360__xserra__speech-male-hpsmodel-sines.wav" />
+    <Content Include="Waves\254361__xserra__speech-male-hpsmodel.wav" />
+    <Content Include="Waves\254372__xserra__speech-male-hprmodel-residual.wav" />
+    <Content Include="Waves\254374__xserra__speech-female.wav" />
+    <Content Include="Waves\_readme_and_license.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="{80659ab7-4d53-4e0c-8588-a766116cbd46}\2.7" />
+    <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />
+  </ItemGroup>
+  <Import Condition="Exists($(PtvsTargetsFile))" Project="$(PtvsTargetsFile)" />
+  <Import Condition="!Exists($(PtvsTargetsFile))" Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
