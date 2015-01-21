@@ -17,6 +17,12 @@ def get_points(sec, fs = 44100):
     return int(fs * sec)
 
 
+def write_wav(filepath, x, fs = 44100):
+    wav.write(
+        filepath, fs,
+        np.array(x, dtype='int16')
+    )
+
 def write_sine(filepath, A = 20000, f = 440, fs = 44100, t = 1):
     wav.write(
         filepath, fs, np.array(
@@ -34,15 +40,14 @@ def read_wavnormalized(filepath, sec_begin = 0, sec_end = -1):
     return fs, get_fragment(x / float(np.iinfo(np.int16).max), sec_begin, sec_end, fs)
 
 def show_plot(title, x, ran = None):
-    N = len(x)
-    x_min = int(min(x))
-    x_max = int(max(x))
-    x_def = x_max - x_min
+    x_min = float(min(x))
+    x_max = float(max(x))
+    x_amp = x_max - x_min
     if ran == None:
-        ran = (0, N)
+        ran = (0, len(x))
     plt.figure().suptitle(title)
     plt.plot(np.arange(ran[0], ran[1]), x)
-    plt.axis([ran[0], ran[1], x_min - 0.3 * x_def, x_max + 0.3 * x_def])
+    plt.axis([ran[0], ran[1], x_min - 0.3 * x_amp, x_max + 0.3 * x_amp])
     plt.show()
 
 def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
@@ -138,4 +143,4 @@ hM1 = int(math.floor((M + 1) / 2))
 hM2 = int(math.floor(M / 2))
 fs, x = read_normalized(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'))
 
-show_wavplot(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'), sec_end = 1, read_func = read_wav)
+show_wavplot(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'), sec_end = 0.01, read_func = read_wav)
