@@ -6,6 +6,7 @@ from scipy.signal import triang
 from scipy.fftpack import fft
 
 
+
 def get_fragment(x, sec_begin, sec_end, fs = 44100):
     if sec_end == -1:
         sec_end = len(x) / float(fs)
@@ -55,6 +56,7 @@ def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
     show_plot(filepath, x)
 
 
+
 def genRealSine(A = 1, f = 440, phi = 0, fs = 44100, t = 1):
     return A * np.cos(2 * np.pi * f * np.arange(0, t, 1.0 / fs) + phi)
 
@@ -77,7 +79,7 @@ def genMagnitudeSpectrum(x):
     return 20 * np.log10(np.real(abs(DFT(x)[len(x)/2:])))
 
 def genPhaseSpectrum(x):
-    return np.angle(DFT(x)[len(x)/2:])
+    return np.unwrap(np.angle(DFT(x)[len(x)/2:]))
 
 
 def IDFT(X):
@@ -88,7 +90,8 @@ def IDFT(X):
     return np.array([sum(X * sn) / N for sn in s])
 
 
-def analize_DFT(freq = 110, wave_type = 'real', hop_num = 15, Amp = 20000):
+
+def analize_sineDFT(freq = 110, wave_type = 'real', hop_num = 15, Amp = 20000):
 
     if wave_type == 'real':
         x = genRealSine(A = Amp, f = freq)
@@ -125,22 +128,31 @@ def analize_DFT(freq = 110, wave_type = 'real', hop_num = 15, Amp = 20000):
     print('max DFTs of wave x: %s' % [(idx, val) for idx, val in enumerate(mX) if val == mX_max])
 
 
+
+# W3 lecture notes
 x = triang(15)
 N = len(x)
 X = fft(fftbuffer)
-mX = abs(X[N/2:])
+mX = 20 * np.log10(abs(X[N/2:]))
 pX = np.angle(X[N/2:])
 
 fftbuffer = np.zeros(15)
 fftbuffer[:8] = x[7:]
 fftbuffer[8:] = x[:7]
-FFTBUFFER = fft(fftbuffer)
-mFFTBUFFER = abs(FFTBUFFER[N/2:])
-pFFTBUFFER = np.angle(FFTBUFFER[N/2:])
+X = fft(fftbuffer)
+mX = 20 * np.log10(abs(X[N/2:]))
+pX = np.angle(X[N/2:])
 
 M = 501
 hM1 = int(math.floor((M + 1) / 2))
 hM2 = int(math.floor(M / 2))
-fs, x = read_normalized(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'))
+fs, wave = read_normalized(os.path.join('Waves', '205513__xserra__flute-a4.wav'))
+x1 = wave[5000:5000+M] * np.hamming(M)
 
-show_wavplot(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'), sec_end = 0.01, read_func = read_wav)
+N = 1024
+fftbuffer = np.zeros(N)
+fftbuffer[:hM1] = x1[hM2:]
+fftbuffer[N-hM2:] = x1[:hM2]
+X = fft(fftbuffer)
+mX = 20 * np.log10(abs(X[N/2:]))
+pX = np.angle(X[N/2:])
