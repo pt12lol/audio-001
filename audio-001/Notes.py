@@ -1,10 +1,20 @@
-import os
-import random
+import os, random, math
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
 from scipy.signal import triang
 from scipy.fftpack import fft
+
+
+def get_fragment(x, sec_begin, sec_end, fs = 44100):
+    if sec_end == -1:
+        sec_end = len(x) / float(fs)
+    begin = get_points(sec_begin, fs)
+    end = get_points(sec_end, fs)
+    return x[begin:end]
+
+def get_points(sec, fs = 44100):
+    return int(fs * sec)
 
 
 def write_sine(filepath, A = 20000, f = 440, fs = 44100, t = 1):
@@ -15,28 +25,18 @@ def write_sine(filepath, A = 20000, f = 440, fs = 44100, t = 1):
         )
     )
 
-def read(filepath):
-    r, x = wav.read(filepath)
-    return x
+def read_wav(filepath, sec_begin = 0, sec_end = -1):
+    fs, x = wav.read(filepath)
+    return fs, get_fragment(x, sec_begin, sec_end, fs)
 
-def read_normalized(filepath):
-    r, x = wav.read(filepath)
-    return r, x / float(np.iinfo(np.int16).max)
-
-
-def show_wavplot(filepath, sec_begin = 0, sec_end = -1):
-    (fs, x) = wav.read(filepath)
-    if sec_end == -1:
-        sec_end = x.size / float(fs)
-    begin = int(fs * sec_begin)
-    end = int(fs * sec_end)
-    t = np.arange(x.size) / float(fs)
-    plt.plot(t[begin:end], x[begin:end])
+def read_wavnormalized(filepath, sec_begin = 0, sec_end = -1):
+    fs, x = wav.read(filepath)
+    return fs, get_fragment(x / float(np.iinfo(np.int16).max), sec_begin, sec_end, fs)
 
 def show_plot(title, x, ran = None):
     N = len(x)
-    x_min = min(x)
-    x_max = max(x)
+    x_min = int(min(x))
+    x_max = int(max(x))
     x_def = x_max - x_min
     if ran == None:
         ran = (0, N)
@@ -44,6 +44,10 @@ def show_plot(title, x, ran = None):
     plt.plot(np.arange(ran[0], ran[1]), x)
     plt.axis([ran[0], ran[1], x_min - 0.3 * x_def, x_max + 0.3 * x_def])
     plt.show()
+
+def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
+    fs, x = read_func(filepath, sec_begin, sec_end)
+    show_plot(filepath, x)
 
 
 def genRealSine(A = 1, f = 440, phi = 0, fs = 44100, t = 1):
@@ -87,7 +91,7 @@ def analize_DFT(freq = 110, wave_type = 'real', hop_num = 15, Amp = 20000):
         x = genComplexSine(A = Amp, k = freq)
     elif wave_type == 'file':
         write_sine('test.wav', A = Amp, f = freq)
-        x = read('test.wav')
+        x = read_wav('test.wav')[1]
     x = x[::hop_num]
 
     N = len(x)
@@ -129,5 +133,9 @@ FFTBUFFER = fft(fftbuffer)
 mFFTBUFFER = abs(FFTBUFFER[N/2:])
 pFFTBUFFER = np.angle(FFTBUFFER[N/2:])
 
-r, x = read_normalized(os.path.join('test.wav'))
-show_plot('test.wav', x)
+M = 501
+hM1 = int(math.floor((M + 1) / 2))
+hM2 = int(math.floor(M / 2))
+fs, x = read_normalized(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'))
+
+show_wavplot(os.path.join('Waves', '217543__xserra__orchestra-fragment.wav'), sec_end = 1, read_func = read_wav)
