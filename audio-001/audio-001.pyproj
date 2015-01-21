@@ -47,7 +47,6 @@
     <Compile Include="A2\A2Part3.py" />
     <Compile Include="A2\A2Part4.py" />
     <Compile Include="A2\A2Part5.py" />
-    <Compile Include="A2\Notes.py" />
     <Compile Include="A2\submitA2.py" />
     <Compile Include="A3\A3Part1.py" />
     <Compile Include="A3\A3Part2.py" />
@@ -71,7 +70,7 @@
     <Compile Include="A6\A6Part3.py" />
     <Compile Include="A6\A6Part4.py" />
     <Compile Include="A6\submitA6.py" />
-    <Compile Include="A1\Notes.py" />
+    <Compile Include="Notes.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="A1\A1-Python_and_sounds.pdf" />
@@ -80,7 +79,6 @@
     <Content Include="A2\A2-Sinusoids_and_DFT.pdf" />
     <Content Include="A2\Programming assignment - Guidelines.pdf" />
     <Content Include="A2\testInputA2.pkl" />
-    <Content Include="A3\.DS_Store" />
     <Content Include="A3\A3-Fourier_properties.pdf" />
     <Content Include="A3\Programming assignment - Guidelines.pdf" />
     <Content Include="A3\testInputA3.pkl" />
