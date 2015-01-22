@@ -2,19 +2,17 @@ import os, random, math
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
-from scipy.signal import triang
-from scipy.fftpack import fft
+import scipy.signal as sgnl
+import scipy.fftpack as fp
 
 
 
-def get_fragment(x, sec_begin, sec_end, fs = 44100):
-    if sec_end == -1:
-        sec_end = len(x) / float(fs)
-    begin = get_points(sec_begin, fs)
-    end = get_points(sec_end, fs)
+def get_fragment(x, sec_begin = 0, sec_end = -1, fs = 44100):
+    begin = get_samples(sec_begin, fs)
+    end = get_samples(sec_end if sec_end == -1 else len(x) / float(fs), fs)
     return x[begin:end]
 
-def get_points(sec, fs = 44100):
+def get_samples(sec, fs = 44100):
     return int(fs * sec)
 
 
@@ -40,15 +38,13 @@ def read_wavnormalized(filepath, sec_begin = 0, sec_end = -1):
     fs, x = wav.read(filepath)
     return fs, get_fragment(x / float(np.iinfo(np.int16).max), sec_begin, sec_end, fs)
 
-def show_plot(title, x, ran = None):
-    x_min = float(min(x))
-    x_max = float(max(x))
-    x_amp = x_max - x_min
-    if ran == None:
-        ran = (0, len(x))
+def show_plot(title, x, y):
+    y_min = float(min(y))
+    y_max = float(max(y))
+    y_amp = y_max - y_min
     plt.figure().suptitle(title)
-    plt.plot(np.arange(ran[0], ran[1]), x)
-    plt.axis([ran[0], ran[1], x_min - 0.3 * x_amp, x_max + 0.3 * x_amp])
+    plt.plot(x, y)
+    plt.axis([x[0], x[-1], y_min - 0.3 * y_amp, y_max + 0.3 * y_amp])
     plt.show()
 
 def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
@@ -68,91 +64,70 @@ def genWhiteNoise(A_max = 20000, fs = 44100, t = 1):
     return np.array([random.randint(-A_max, A_max) for i in range(fs * t)])
 
 
-def DFT(x):
+def dft(x):
     N = len(x)
-    nv = np.arange(-N/2, N/2)
-    kv = np.arange(-N/2, N/2)
+    nv = np.arange(N)
+    kv = np.arange(N)
     s = [np.exp(1j * 2 * np.pi * k * nv / N) for k in kv]
     return np.array([sum(x * np.conjugate(sk)) for sk in s])
 
-def genMagnitudeSpectrum(x):
-    return 20 * np.log10(np.real(abs(DFT(x)[len(x)/2:])))
+def genBufferedDft(x, w = lambda n: 1, dftlen = -1, dft_func = fp.fft):
+    N = len(x)
+    hM1 = int(math.floor((N + 1) / 2))
+    hM2 = int(math.floor(N / 2))
+    xw = x * w(N)
+    dftbuffer = np.concatenate(
+        (xw[hM2:], np.zeros((dftlen if dftlen != -1 else len(x)) - hM1 - hM2), xw[:hM2])
+    )
+    return dft_func(dftbuffer)
 
-def genPhaseSpectrum(x):
-    return np.unwrap(np.angle(DFT(x)[len(x)/2:]))
+def genMagnitudeSpectrum(x, w = lambda n: 1, dftlen = -1, dft_func = fp.fft):
+    N = len(x)
+    X = genBufferedDft(x, w, dftlen)
+    return 20 * np.log10(np.real(abs(X[:N/2])))
+
+def genPhaseSpectrum(x, w = lambda n: 1, dftlen = -1, dft_func = fp.fft):
+    N = len(x)
+    X = genBufferedDft(x, w, dftlen)
+    return np.unwrap(np.angle(X[:N/2]))
 
 
-def IDFT(X):
+def idft(X):
     N = len(X)
-    kv = np.arange(-N/2, N/2)
-    nv = np.arange(-N/2, N/2)
+    kv = np.arange(N)
+    nv = np.arange(N)
     s = [np.exp(1j * 2 * np.pi * n * kv / N) for n in nv]
     return np.array([sum(X * sn) / N for sn in s])
 
 
 
-def analize_sineDFT(freq = 110, wave_type = 'real', hop_num = 15, Amp = 20000):
+def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1):
 
-    if wave_type == 'real':
-        x = genRealSine(A = Amp, f = freq)
-    elif wave_type == 'complex':
-        x = genComplexSine(A = Amp, k = freq)
-    elif wave_type == 'file':
-        write_sine('test.wav', A = Amp, f = freq)
-        x = read_wav('test.wav')[1]
-    x = x[::hop_num]
+    x = genRealSine(A = amp, f = freq)[::hop_num] if source == 'real' else \
+        genComplexSine(A = amp, k = freq)[::hop_num] if source == 'complex' else \
+        read_wav(source)[1][::hop_num]
 
     N = len(x)
     print('len(x) == %s' % N)
 
-    X = abs(DFT(x))
-    y = IDFT(X)
-    Y = abs(DFT(y))
-    mX = genMagnitudeSpectrum(x)
-    pX = genPhaseSpectrum(x)
+    X = abs(dft(x))
+    mX = genMagnitudeSpectrum(x, dftlen = dftrate * N)
+    pX = genPhaseSpectrum(x, dftlen = dftrate * N)
+    y = idft(X)
+    Y = abs(dft(y))
 
-    show_plot('Wave x', np.real(x))
-    show_plot('DFT of wave x', np.real(X), (-N/2, N/2))
-    show_plot('Magnitude Spectrum of x', mX)
-    show_plot('Phase Spectrum of x', pX)
-    show_plot('Wave y', np.real(y))
-    show_plot('DFT of wave y', np.real(Y), (-N/2, N/2))
+    show_plot('Wave x', np.arange(N), np.real(x))
+    show_plot('DFT of wave x', np.arange(N), np.real(X))
+    show_plot('Magnitude Spectrum of x', np.arange(0, N / (dftrate * 2.0), 1.0 / dftrate), mX)
+    show_plot('Phase Spectrum of x', np.arange(0, N / (dftrate * 2.0), 1.0 / dftrate), pX)
+    show_plot('Wave y', np.arange(N), np.real(y))
+    show_plot('DFT of wave y', np.arange(0, N), np.real(Y))
     
     mX_max = max(mX)
-    #intdft = [int(i) for i in np.real(mX)]
-    #for item in sorted(set(intdft)):
-    #    if intdft.count(item) < 10:
-    #        print('%s (%s): %s' % (item, intdft.count(item), [idx for idx, val in enumerate(intdft) if val == item]))
-    #    else:
-    #        print('%s (%s)' % (item, intdft.count(item)))
-    print('max DFTs of wave x: %s' % [(idx, val) for idx, val in enumerate(mX) if val == mX_max])
-
-
-
-# W3 lecture notes
-x = triang(15)
-N = len(x)
-X = fft(fftbuffer)
-mX = 20 * np.log10(abs(X[N/2:]))
-pX = np.angle(X[N/2:])
-
-fftbuffer = np.zeros(15)
-fftbuffer[:8] = x[7:]
-fftbuffer[8:] = x[:7]
-X = fft(fftbuffer)
-mX = 20 * np.log10(abs(X[N/2:]))
-pX = np.angle(X[N/2:])
-
-M = 501
-hM1 = int(math.floor((M + 1) / 2))
-hM2 = int(math.floor(M / 2))
-fs, wave = read_normalized(os.path.join('Waves', '205513__xserra__flute-a4.wav'))
-x1 = wave[5000:5000+M] * np.hamming(M)
-
-N = 1024
-fftbuffer = np.zeros(N)
-fftbuffer[:hM1] = x1[hM2:]
-fftbuffer[N-hM2:] = x1[:hM2]
-X = fft(fftbuffer)
-mX = 20 * np.log10(abs(X[N/2:]))
-pX = np.angle(X[N/2:])
+    ##intdft = [int(i) for i in np.real(mX)]
+    ##for item in sorted(set(intdft)):
+    ##    if intdft.count(item) < 10:
+    ##        print('%s (%s): %s' % (item, intdft.count(item), [idx for idx, val in enumerate(intdft) if val == item]))
+    ##    else:
+    ##        print('%s (%s)' % (item, intdft.count(item)))
+    print('max DFTs of wave x: %s' % [(idx / dftrate, val) for idx, val in enumerate(mX) if val == mX_max])
