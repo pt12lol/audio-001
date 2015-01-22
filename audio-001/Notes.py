@@ -98,9 +98,11 @@ def idft(X):
 
 def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1, dft_func = fp.fft, idft_func = fp.ifft):
 
-    x = genRealSine(A = amp, f = freq)[::hop_num] if source == 'real' else \
-        genComplexSine(A = amp, k = freq)[::hop_num] if source == 'complex' else \
-        read_wav(source)[1][::hop_num]
+    x = (
+        genRealSine(A = amp, f = freq) if source == 'real' else \
+        genComplexSine(A = amp, k = freq) if source == 'complex' else \
+        read_wav(source)[1]
+    )[::hop_num]
 
     N = len(x)
     print('len(x) == %s' % N)
