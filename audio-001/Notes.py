@@ -23,12 +23,7 @@ def write_wav(filepath, x, fs = 44100):
     )
 
 def write_sine(filepath, A = 20000, f = 440, fs = 44100, t = 1):
-    wav.write(
-        filepath, fs, np.array(
-            genRealSine(A, f, 0, fs, t),
-            dtype='int16'
-        )
-    )
+    write_wav(filepath, genRealSine(A, f, 0, fs, t), fs)
 
 def read_wav(filepath, sec_begin = 0, sec_end = -1):
     fs, x = wav.read(filepath)
@@ -49,7 +44,7 @@ def show_plot(title, x, y):
 
 def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
     fs, x = read_func(filepath, sec_begin, sec_end)
-    show_plot(filepath, x)
+    show_plot(filepath, np.arange(0, sec_end, 1./fs), x)
 
 
 
@@ -101,7 +96,7 @@ def idft(X):
 
 
 
-def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1):
+def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1, dft_func = fp.fft, idft_func = fp.ifft):
 
     x = genRealSine(A = amp, f = freq)[::hop_num] if source == 'real' else \
         genComplexSine(A = amp, k = freq)[::hop_num] if source == 'complex' else \
@@ -110,11 +105,11 @@ def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1)
     N = len(x)
     print('len(x) == %s' % N)
 
-    X = abs(dft(x))
+    X = abs(dft_func(x))
     mX = genMagnitudeSpectrum(x, dftlen = dftrate * N)
     pX = genPhaseSpectrum(x, dftlen = dftrate * N)
-    y = idft(X)
-    Y = abs(dft(y))
+    y = idft_func(X)
+    Y = abs(dft_func(y))
 
     show_plot('Wave x', np.arange(N), np.real(x))
     show_plot('DFT of wave x', np.arange(N), np.real(X))
@@ -124,10 +119,4 @@ def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1)
     show_plot('DFT of wave y', np.arange(0, N), np.real(Y))
     
     mX_max = max(mX)
-    ##intdft = [int(i) for i in np.real(mX)]
-    ##for item in sorted(set(intdft)):
-    ##    if intdft.count(item) < 10:
-    ##        print('%s (%s): %s' % (item, intdft.count(item), [idx for idx, val in enumerate(intdft) if val == item]))
-    ##    else:
-    ##        print('%s (%s)' % (item, intdft.count(item)))
     print('max DFTs of wave x: %s' % [(idx / dftrate, val) for idx, val in enumerate(mX) if val == mX_max])
