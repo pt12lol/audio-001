@@ -118,13 +118,10 @@ def genSignal(mX, pX, x_len = -1, w = np.rectangular, idft_func = fp.ifft):
             10 ** (mX[:0:-1] / 20) * np.exp(-1j * pX[:0:-1])
         )
     )
-    print len(X)
     dft_buffer = np.real(idft_func(X))
-    print len(dft_buffer)
     x = np.concatenate(
         (dft_buffer[N - hM2:], dft_buffer[:hM1])
     )
-    print len(x)
     return x
 
 
@@ -148,7 +145,6 @@ def analize_dft(
 
     X = abs(dft_func(x))
     mX, pX = genSpectras(x, dft_len = dft_rate * N, w = window_func)
-    #y = idft_func(X)
     y = genSignal(mX = mX, pX = pX, x_len = N, w = window_func, idft_func = idft_func)
     Y = abs(dft_func(y))
 
