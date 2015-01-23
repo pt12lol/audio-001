@@ -74,7 +74,9 @@ def genBufferedDft(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
     x_len = len(x)
     hM1 = int(math.floor((x_len + 1) / 2))
     hM2 = int(math.floor(x_len / 2))
-    xw = x * w(x_len)
+    w_x = w(x_len)
+    w_sum = sum(w_x)
+    xw = x * w_x / w_sum
     dft_buffer = np.concatenate(
         (xw[hM2:], np.zeros(N - hM1 - hM2), xw[:hM2])
     )
@@ -82,17 +84,17 @@ def genBufferedDft(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
 
 def genMagnitudeSpectrum(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
     hN = dft_len / 2
-    X = genBufferedDft(x, w, dft_len)
+    X = genBufferedDft(x, w, dft_len, dft_func)
     return 20 * np.log10(np.real(abs(X[:hN])))
 
 def genPhaseSpectrum(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
     hN = dft_len / 2
-    X = genBufferedDft(x, w, dft_len)
+    X = genBufferedDft(x, w, dft_len, dft_func)
     return np.unwrap(np.angle(X[:hN]))
 
-def genSpectras(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+def genSpectrums(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
     hN = dft_len / 2
-    X = genBufferedDft(x, w, dft_len)
+    X = genBufferedDft(x, w, dft_len, dft_func)
     mX = 20 * np.log10(np.real(abs(X[:hN])))
     pX = np.unwrap(np.angle(X[:hN]))
     return mX, pX
@@ -122,7 +124,9 @@ def genSignal(mX, pX, x_len = -1, w = np.rectangular, idft_func = fp.ifft):
     x = np.concatenate(
         (dft_buffer[N - hM2:], dft_buffer[:hM1])
     )
-    return x
+    w_x = w(M)
+    w_sum = sum(w_x)
+    return x * w_sum / w_x
 
 
 
@@ -140,11 +144,12 @@ def analize_dft(
         read_wav(source)[1]
     )[::hop_num]
 
+    fs = 44100.0
     N = len(x)
     print('len(x) == %s' % N)
 
     X = abs(dft_func(x))
-    mX, pX = genSpectras(x, dft_len = dft_rate * N, w = window_func)
+    mX, pX = genSpectrums(x, dft_len = dft_rate * N, w = window_func)
     y = genSignal(mX = mX, pX = pX, x_len = N, w = window_func, idft_func = idft_func)
     Y = abs(dft_func(y))
 
