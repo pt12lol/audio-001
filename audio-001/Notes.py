@@ -59,6 +59,9 @@ def genWhiteNoise(A_max = 20000, fs = 44100, t = 1):
     return np.array([random.randint(-A_max, A_max) for i in range(fs * t)])
 
 
+np.rectangular = lambda n: np.ones(n)
+
+
 def dft(x):
     N = len(x)
     nv = np.arange(N)
@@ -66,25 +69,33 @@ def dft(x):
     s = [np.exp(1j * 2 * np.pi * k * nv / N) for k in kv]
     return np.array([sum(x * np.conjugate(sk)) for sk in s])
 
-def genBufferedDft(x, w = lambda n: 1, dftlen = -1, dft_func = fp.fft):
-    N = len(x)
-    hM1 = int(math.floor((N + 1) / 2))
-    hM2 = int(math.floor(N / 2))
-    xw = x * w(N)
-    dftbuffer = np.concatenate(
-        (xw[hM2:], np.zeros((dftlen if dftlen != -1 else len(x)) - hM1 - hM2), xw[:hM2])
+def genBufferedDft(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+    N = dft_len if dft_len != -1 else len(x)
+    x_len = len(x)
+    hM1 = int(math.floor((x_len + 1) / 2))
+    hM2 = int(math.floor(x_len / 2))
+    xw = x * w(x_len)
+    dft_buffer = np.concatenate(
+        (xw[hM2:], np.zeros(N - hM1 - hM2), xw[:hM2])
     )
-    return dft_func(dftbuffer)
+    return dft_func(dft_buffer)
 
-def genMagnitudeSpectrum(x, w = lambda n: 1, dftlen = -1, dft_func = fp.fft):
-    N = len(x)
-    X = genBufferedDft(x, w, dftlen)
-    return 20 * np.log10(np.real(abs(X[:N/2])))
+def genMagnitudeSpectrum(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+    hN = dft_len / 2
+    X = genBufferedDft(x, w, dft_len)
+    return 20 * np.log10(np.real(abs(X[:hN])))
 
-def genPhaseSpectrum(x, w = lambda n: 1, dftlen = -1, dft_func = fp.fft):
-    N = len(x)
-    X = genBufferedDft(x, w, dftlen)
-    return np.unwrap(np.angle(X[:N/2]))
+def genPhaseSpectrum(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+    hN = dft_len / 2
+    X = genBufferedDft(x, w, dft_len)
+    return np.unwrap(np.angle(X[:hN]))
+
+def genSpectras(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+    hN = dft_len / 2
+    X = genBufferedDft(x, w, dft_len)
+    mX = 20 * np.log10(np.real(abs(X[:hN])))
+    pX = np.unwrap(np.angle(X[:hN]))
+    return mX, pX
 
 
 def idft(X):
@@ -92,11 +103,39 @@ def idft(X):
     kv = np.arange(N)
     nv = np.arange(N)
     s = [np.exp(1j * 2 * np.pi * n * kv / N) for n in nv]
-    return np.array([sum(X * sn) / N for sn in s])
+    return np.array([sum(X * sn) / N for sn in s]) 
+
+def genSignal(mX, pX, x_len = -1, w = np.rectangular, idft_func = fp.ifft):
+    N = len(mX) * 2
+    hN = N / 2
+    M = x_len if x_len != -1 else N
+    hM1 = int(math.floor((M + 1) / 2))
+    hM2 = int(math.floor(M / 2))
+    X = np.concatenate(
+        (
+            10 ** (mX / 20) * np.exp(1j * pX),
+            np.zeros(1, dtype = complex),
+            10 ** (mX[:0:-1] / 20) * np.exp(-1j * pX[:0:-1])
+        )
+    )
+    print len(X)
+    dft_buffer = np.real(idft_func(X))
+    print len(dft_buffer)
+    x = np.concatenate(
+        (dft_buffer[N - hM2:], dft_buffer[:hM1])
+    )
+    print len(x)
+    return x
 
 
 
-def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1, dft_func = fp.fft, idft_func = fp.ifft):
+def analize_dft(
+    source = 'real',
+    amp = 1, freq = 110,
+    hop_num = 15,
+    dft_rate = 1, dft_func = fp.fft, idft_func = fp.ifft,
+    window_func = np.rectangular
+):
 
     x = (
         genRealSine(A = amp, f = freq) if source == 'real' else \
@@ -108,17 +147,17 @@ def analize_dft(source = 'real', amp = 1, freq = 110, hop_num = 15, dftrate = 1,
     print('len(x) == %s' % N)
 
     X = abs(dft_func(x))
-    mX = genMagnitudeSpectrum(x, dftlen = dftrate * N)
-    pX = genPhaseSpectrum(x, dftlen = dftrate * N)
-    y = idft_func(X)
+    mX, pX = genSpectras(x, dft_len = dft_rate * N, w = window_func)
+    #y = idft_func(X)
+    y = genSignal(mX = mX, pX = pX, x_len = N, w = window_func, idft_func = idft_func)
     Y = abs(dft_func(y))
 
     show_plot('Wave x', np.arange(N), np.real(x))
     show_plot('DFT of wave x', np.arange(N), np.real(X))
-    show_plot('Magnitude Spectrum of x', np.arange(0, N / (dftrate * 2.0), 1.0 / dftrate), mX)
-    show_plot('Phase Spectrum of x', np.arange(0, N / (dftrate * 2.0), 1.0 / dftrate), pX)
+    show_plot('Magnitude Spectrum of x', np.arange(0, N / 2.0, 1.0 / dft_rate), mX)
+    show_plot('Phase Spectrum of x', np.arange(0, N / 2.0, 1.0 / dft_rate), pX)
     show_plot('Wave y', np.arange(N), np.real(y))
-    show_plot('DFT of wave y', np.arange(0, N), np.real(Y))
+    show_plot('DFT of wave y', np.arange(N), np.real(Y))
     
     mX_max = max(mX)
-    print('max DFTs of wave x: %s' % [(idx / dftrate, val) for idx, val in enumerate(mX) if val == mX_max])
+    print('max magnitude spectrum of wave x: %s' % [(idx / dft_rate, val) for idx, val in enumerate(mX) if val == mX_max])
