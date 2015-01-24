@@ -43,4 +43,11 @@ def optimalZeropad(x, fs, f):
         mX (numpy array) = The positive half of the DFT spectrum of the M point DFT after zero-padding 
                         x appropriately (zero-padding length to be computed). mX is (M/2)+1 samples long
     """
-    ## Your code here
+    freq = fs * 1 / f
+    cycle = (len(x) // freq) if (len(x) % freq == 0) else ((len(x) // freq) + 1)
+    M = cycle * freq
+    pad_size = M - len(x) if M > len(x) else 0
+    x_pad = np.append(x, np.zeros(pad_size))
+    X = fft(x_pad)
+    hM = M / 2 + 1
+    return 20 * np.log10(np.abs(X[:hM]))

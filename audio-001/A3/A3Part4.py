@@ -1,6 +1,6 @@
 import sys
-sys.path.append('../../software/models/')
-from dftModel import dftAnal, dftSynth
+#sys.path.append('../../software/models/')
+#from dftModel import dftAnal, dftSynth
 from scipy.signal import get_window
 import matplotlib.pyplot as plt
 import numpy as np

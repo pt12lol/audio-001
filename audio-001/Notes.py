@@ -60,6 +60,7 @@ def genWhiteNoise(A_max = 20000, fs = 44100, t = 1):
 
 
 np.rectangular = lambda n: np.ones(n)
+genKaiser = lambda beta: lambda M: np.kaiser(M, beta)
 
 
 def dft(x):
