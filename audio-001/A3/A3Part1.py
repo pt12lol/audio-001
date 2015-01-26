@@ -43,8 +43,6 @@ def minimizeEnergySpreadDFT(x, fs, f1, f2):
         mX (numpy array) = The positive half of the DFT spectrum of the M sample segment of x. 
                            mX is (M/2)+1 samples long (M is to be computed)
     """
-    N = len(x)
-    nv = np.arange(-N/2, N/2)
-    kv = np.arange(-N/2, N/2)
-    s = [np.exp(1j * 2 * np.pi * k * nv / N) for k in kv]
-    return np.array([sum(x * np.conjugate(sk)) for sk in s])[N/2:]
+    M = fs * (1.0 / gcd(f1, f2))
+    X = fft(x[:M])
+    return 20 * np.log10(np.abs(X[:M / 2 + 1]))

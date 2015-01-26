@@ -183,7 +183,7 @@ def analize_sinusoid(
 ):
 
     x = (
-        genRealSine(A = amp, f = freq) if real else \
+        genRealSine(A = amp, f = freq) if real else
         genComplexSine(A = amp, k = freq)
     )[::hop_size]
 
@@ -228,14 +228,14 @@ def analyze_wav(input_filepath, dft_rate = 1, window_func = rectangularWindow, o
 
 
 def dft_test(
-    source = 'real', amp = 1, freq = 110, hop_size = 15,
+    real = True, amp = 1, freq = 110, hop_size = 15,
     dft_rate = 1, dft_func = fp.fft, idft_func = fp.ifft,
     window_func = rectangularWindow
 ):
 
     x = (
-        genRealSine(A = amp, f = freq) if source == 'real' else \
-        genComplexSine(A = amp, k = freq) if source == 'complex'
+        genRealSine(A = amp, f = freq) if real else
+        genComplexSine(A = amp, k = freq)
     )[::hop_size]
     
     N = len(x)
@@ -250,4 +250,3 @@ def timer(f):
     start = time.time()
     f()
     return time.time() - start
-
