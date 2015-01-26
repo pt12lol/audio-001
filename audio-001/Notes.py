@@ -60,6 +60,7 @@ def genWhiteNoise(A_max = 20000, fs = 44100, t = 1):
 
 
 np.rectangular = lambda n: np.ones(n)
+genKaiser = lambda beta: lambda M: np.kaiser(M, beta)
 
 
 def dft(x):
@@ -124,7 +125,7 @@ def genSignal(mX, pX, x_len = -1, w = np.rectangular, idft_func = fp.ifft):
     x = np.concatenate(
         (dft_buffer[N - hM2:], dft_buffer[:hM1])
     )
-    w_x = w(M)
+    w_x = np.array([item if item != 0 else np.finfo(float).eps for item in w(M)])
     w_sum = sum(w_x)
     return x * w_sum / w_x
 
