@@ -1,4 +1,4 @@
-import os, random, math
+import os, random, math, time
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wav
@@ -53,24 +53,60 @@ def genRealSine(A = 1, f = 440, phi = 0, fs = 44100, t = 1):
 
 def genComplexSine(A = 1, k = 440, N = 44100):
     n = np.arange(N)
-    return A * np.exp(1j * 2 * np.pi * n * k / N)
+    return A * np.exp(2j * np.pi * n * k / N)
 
 def genWhiteNoise(A_max = 20000, fs = 44100, t = 1):
     return np.array([random.randint(-A_max, A_max) for i in range(fs * t)])
 
 
-np.rectangular = lambda n: np.ones(n)
-genKaiser = lambda beta: lambda M: np.kaiser(M, beta)
+def rectangularWindow(M):
+    return np.ones(M)
+
+def genKaiser(beta):
+    return lambda M: np.kaiser(M, beta)
+
+
+def __fft_acc(x, cutoff):
+    N = len(x)
+    X_even = fft(x[::2])
+    X_odd = fft(x[1::2])
+    factor = np.exp(-2j * np.pi * np.arange(N) / N)
+    return np.concatenate(
+        [
+            X_even + factor[:N / 2] * X_odd,
+            X_even + factor[N / 2:] * X_odd
+        ]
+    )
+
+def __ifft_acc(X, cutoff):
+    N = len(X)
+    x_even = ifft(X[::2])
+    x_odd = ifft(X[1::2])
+    factor = np.exp(2j * np.pi * np.arange(N) / N)
+    return np.concatenate(
+        [
+            x_even + factor[:N / 2] * x_odd,
+            x_even + factor[N / 2:] * x_odd
+        ]
+    ) / 2
 
 
 def dft(x):
     N = len(x)
     nv = np.arange(N)
     kv = np.arange(N)
-    s = [np.exp(1j * 2 * np.pi * k * nv / N) for k in kv]
+    s = [np.exp(2j * np.pi * k * nv / N) for k in kv]
     return np.array([sum(x * np.conjugate(sk)) for sk in s])
 
-def genBufferedDft(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+def fft(x, cutoff = 32):
+    N = len(x)
+    return dft(x) if N % 2 > 0 or N < cutoff else __fft_acc(x, cutoff)
+
+def genFft(cutoff):
+    return lambda x: fft(x, cutoff)
+
+
+def genBufferedDft(x, w = rectangularWindow, dft_len = -1, dft_func = fp.fft):
     N = dft_len if dft_len != -1 else len(x)
     x_len = len(x)
     hM1 = int(math.floor((x_len + 1) / 2))
@@ -83,17 +119,17 @@ def genBufferedDft(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
     )
     return dft_func(dft_buffer)
 
-def genMagnitudeSpectrum(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+def genMagnitudeSpectrum(x, w = rectangularWindow, dft_len = -1, dft_func = fp.fft):
     hN = dft_len / 2
     X = genBufferedDft(x, w, dft_len, dft_func)
     return 20 * np.log10(np.real(abs(X[:hN])))
 
-def genPhaseSpectrum(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+def genPhaseSpectrum(x, w = rectangularWindow, dft_len = -1, dft_func = fp.fft):
     hN = dft_len / 2
     X = genBufferedDft(x, w, dft_len, dft_func)
     return np.unwrap(np.angle(X[:hN]))
 
-def genSpectrums(x, w = np.rectangular, dft_len = -1, dft_func = fp.fft):
+def genSpectrums(x, w = rectangularWindow, dft_len = -1, dft_func = fp.fft):
     hN = dft_len / 2
     X = genBufferedDft(x, w, dft_len, dft_func)
     mX = 20 * np.log10(np.real(abs(X[:hN])))
@@ -105,10 +141,18 @@ def idft(X):
     N = len(X)
     kv = np.arange(N)
     nv = np.arange(N)
-    s = [np.exp(1j * 2 * np.pi * n * kv / N) for n in nv]
-    return np.array([sum(X * sn) / N for sn in s]) 
+    s = [np.exp(2j * np.pi * n * kv / N) for n in nv]
+    return np.array([sum(X * sn) / N for sn in s])
 
-def genSignal(mX, pX, x_len = -1, w = np.rectangular, idft_func = fp.ifft):
+def ifft(X, cutoff = 32):
+    N = len(X)
+    return idft(X) if N % 2 > 0 or N < cutoff else __ifft_acc(X, cutoff)
+
+def genIfft(cutoff):
+    return lambda X: ifft(X, cutoff)
+
+
+def genSignal(mX, pX, x_len = -1, w = rectangularWindow, idft_func = fp.ifft):
     N = len(mX) * 2
     hN = N / 2
     M = x_len if x_len != -1 else N
@@ -131,12 +175,10 @@ def genSignal(mX, pX, x_len = -1, w = np.rectangular, idft_func = fp.ifft):
 
 
 
-def analize_dft(
-    source = 'real',
-    amp = 1, freq = 110,
-    hop_num = 15,
+def analize_spectrums(
+    source = 'real', amp = 1, freq = 110, hop_num = 15,
     dft_rate = 1, dft_func = fp.fft, idft_func = fp.ifft,
-    window_func = np.rectangular
+    window_func = rectangularWindow
 ):
 
     x = (
@@ -163,3 +205,29 @@ def analize_dft(
     
     mX_max = max(mX)
     print('max magnitude spectrum of wave x: %s' % [(idx / dft_rate, val) for idx, val in enumerate(mX) if val == mX_max])
+    
+    
+def dft_test(
+    source = 'real', amp = 1, freq = 110, hop_num = 15,
+    dft_rate = 1, dft_func = fp.fft, idft_func = fp.ifft,
+    window_func = rectangularWindow
+):
+
+    x = (
+        genRealSine(A = amp, f = freq) if source == 'real' else \
+        genComplexSine(A = amp, k = freq) if source == 'complex' else \
+        read_wav(source)[1]
+    )[::hop_num]
+    
+    N = len(x)
+
+    X = abs(dft_func(x))
+    mX, pX = genSpectrums(x, w = window_func, dft_len = dft_rate * N, dft_func = dft_func)
+    y = genSignal(mX = mX, pX = pX, x_len = N, w = window_func, idft_func = idft_func)
+    Y = abs(dft_func(y))
+
+
+def timer(f):
+    start = time.time()
+    f()
+    return time.time() - start
