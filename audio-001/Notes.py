@@ -22,6 +22,9 @@ def write_wav(filepath, x, fs = 44100):
         np.array(x, dtype='int16')
     )
 
+def write_wavnormalized(filepath, x, fs = 44100):
+    write_wav(filepath, x * np.iinfo(np.int16).max, fs)
+
 def write_sine(filepath, A = 20000, f = 440, fs = 44100, t = 1):
     write_wav(filepath, genRealSine(A, f, 0, fs, t), fs)
 
@@ -105,7 +108,6 @@ def fft(x, cutoff = 32):
 def genFft(cutoff):
     return lambda x: fft(x, cutoff)
 
-
 def genBufferedDft(x, w = rectangularWindow, dft_len = -1, dft_func = fp.fft):
     N = dft_len if dft_len != -1 else len(x)
     x_len = len(x)
@@ -151,7 +153,6 @@ def ifft(X, cutoff = 32):
 def genIfft(cutoff):
     return lambda X: ifft(X, cutoff)
 
-
 def genSignal(mX, pX, x_len = -1, w = rectangularWindow, idft_func = fp.ifft):
     N = len(mX) * 2
     hN = N / 2
@@ -175,24 +176,23 @@ def genSignal(mX, pX, x_len = -1, w = rectangularWindow, idft_func = fp.ifft):
 
 
 
-def analize_spectrums(
-    source = 'real', amp = 1, freq = 110, hop_num = 15,
+def analize_sinusoid(
+    real = True, amp = 1, freq = 110, hop_size = 10,
     dft_rate = 1, dft_func = fp.fft, idft_func = fp.ifft,
     window_func = rectangularWindow
 ):
 
     x = (
-        genRealSine(A = amp, f = freq) if source == 'real' else \
-        genComplexSine(A = amp, k = freq) if source == 'complex' else \
-        read_wav(source)[1]
-    )[::hop_num]
+        genRealSine(A = amp, f = freq) if real else \
+        genComplexSine(A = amp, k = freq)
+    )[::hop_size]
 
     fs = 44100.0
     N = len(x)
     print('len(x) == %s' % N)
 
     X = abs(dft_func(x))
-    mX, pX = genSpectrums(x, dft_len = dft_rate * N, w = window_func)
+    mX, pX = genSpectrums(x, w = window_func, dft_len = dft_rate * N, dft_func = dft_func)
     y = genSignal(mX = mX, pX = pX, x_len = N, w = window_func, idft_func = idft_func)
     Y = abs(dft_func(y))
 
@@ -205,19 +205,38 @@ def analize_spectrums(
     
     mX_max = max(mX)
     print('max magnitude spectrum of wave x: %s' % [(idx / dft_rate, val) for idx, val in enumerate(mX) if val == mX_max])
-    
-    
+
+
+def analyze_wav(input_filepath, dft_rate = 1, window_func = rectangularWindow, output_filepath = 'test.wav'):
+
+    fs, x = read_wavnormalized(input_filepath)
+    N = len(x)
+
+    X = abs(fp.fft(x))
+    mX, pX = genSpectrums(x, w = window_func, dft_len = dft_rate * N, dft_func = fp.fft)
+    y = genSignal(mX = mX, pX = pX, x_len = N, w = window_func, idft_func = fp.ifft)
+    Y = abs(fp.fft(y))
+
+    show_plot('Wave x', np.arange(N) / float(fs), np.real(x))
+    show_plot('DFT of wave x', np.arange(N), np.real(X))
+    show_plot('Magnitude Spectrum of x', np.arange(0, N / 2.0, 1.0 / dft_rate), mX)
+    show_plot('Phase Spectrum of x', np.arange(0, N / 2.0, 1.0 / dft_rate), pX)
+    show_plot('Wave y', np.arange(N) / float(fs), np.real(y))
+    show_plot('DFT of wave y', np.arange(N), np.real(Y))
+
+    write_wavnormalized(output_filepath, y, fs)
+
+
 def dft_test(
-    source = 'real', amp = 1, freq = 110, hop_num = 15,
+    source = 'real', amp = 1, freq = 110, hop_size = 15,
     dft_rate = 1, dft_func = fp.fft, idft_func = fp.ifft,
     window_func = rectangularWindow
 ):
 
     x = (
         genRealSine(A = amp, f = freq) if source == 'real' else \
-        genComplexSine(A = amp, k = freq) if source == 'complex' else \
-        read_wav(source)[1]
-    )[::hop_num]
+        genComplexSine(A = amp, k = freq) if source == 'complex'
+    )[::hop_size]
     
     N = len(x)
 
@@ -231,3 +250,4 @@ def timer(f):
     start = time.time()
     f()
     return time.time() - start
+
