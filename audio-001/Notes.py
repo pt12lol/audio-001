@@ -43,7 +43,7 @@ def read_wavnormalized(filepath, sec_begin = 0, sec_end = -1):
 
 
 # plot drawing #################################################################
-def show_plot(title, x, y):
+def show_plot2d(title, x, y):
     y_min = float(min(y))
     y_max = float(max(y))
     y_amp = y_max - y_min
@@ -52,9 +52,15 @@ def show_plot(title, x, y):
     plt.axis([x[0], x[-1], y_min - 0.3 * y_amp, y_max + 0.3 * y_amp])
     plt.show()
 
+def show_plot3d(title, x, y, z):
+    plt.figure().suptitle(title)
+    plt.pcolormesh(x, y, z)
+    plt.axis([x[0], x[-1], y[0], y[-1]])
+    plt.show()
+
 def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
     fs, x = read_func(filepath, sec_begin, sec_end)
-    show_plot(filepath, np.arange(0, sec_end, 1./fs), x)
+    show_plot2d(filepath, np.arange(0, sec_end, 1./fs), x)
 ################################################################################
 
 
@@ -111,12 +117,12 @@ def genFft(cutoff):
 
 # dft analyzis helpers #########################################################
 def genBufferedDft(x, w, N, dft_func = fp.fft):
-    x_len = len(x)
-    hM1 = int(math.floor((x_len + 1) / 2))
-    hM2 = int(math.floor(x_len / 2))
-    w_x = w(x_len)
-    w_sum = sum(w_x)
-    xw = x * w_x / w_sum
+    M = len(x)
+    hM1 = int(math.floor((M + 1) / 2))
+    hM2 = int(math.floor(M / 2))
+    w_M = w(M)
+    w_sum = sum(w_M)
+    xw = x * w_M / w_sum
     dft_buffer = np.concatenate(
         (xw[hM2:], np.zeros(N - hM1 - hM2), xw[:hM2])
     )
@@ -142,36 +148,38 @@ def genSpectrums_dft(x, w, N, dft_func = fp.fft):
 
 
 # stft analyzis helpers ########################################################
-def genSamplesOfStft(x, w, M, H, dft_func = fp.fft):    
+def genSamplesOfStft(x, w, M, H, dft_func = fp.fft):
     hM1 = int(math.floor((M + 1) / 2))
     hM2 = int(math.floor(M / 2))
-    samples_num = (len(x) - 2 * hM1) / H
+    x_ext = np.concatenate((np.zeros(hM2), x, np.zeros(hM2)))
+    samples_num = (len(x_ext) - 2 * hM1) / H
     lv = np.arange(hM1, hM1 * samples_num, H)
-    return np.array([x[l - hM1:l + hM2] for l in lv])
+    w_M = w(M)
+    w_sum = sum(w_M)
+    return np.array([x_ext[l - hM1:l + hM2] * w_M / w_sum for l in lv])
 
-def genMagnitudeSpectrum_stft(x, w, M, w_len, H, dft_func = fp.fft):
+def genMagnitudeSpectrum_stft(x, w, M, N, H, dft_func = fp.fft):
     xlv = genSamplesOfStft(x, w, M, H, dft_func)
     return np.transpose(
         np.array(
-            [genMagnitudeSpectrum_dft(xl, w, w_len, dft_func) for xl in xlv]
+            [genMagnitudeSpectrum_dft(xl, w, N, dft_func) for xl in xlv]
         )
     )
 
-def genPhaseSpectrum_stft(x, w, M, w_len, H, dft_func = fp.fft):
+def genPhaseSpectrum_stft(x, w, M, N, H, dft_func = fp.fft):
     xlv = genSamplesOfStft(x, w, M, H, dft_func)
     return np.transpose(
         np.array(
-            [genPhaseSpectrum_dft(xl, w, w_len, dft_func) for xl in xlv]
+            [genPhaseSpectrum_dft(xl, w, N, dft_func) for xl in xlv]
         )
     )
 
-def genSpectrums_stft(x, w, M, w_len, H, dft_func = fp.fft):
+def genSpectrums_stft(x, w, M, N, H, dft_func = fp.fft):
     xlv = genSamplesOfStft(x, w, M, H, dft_func)
-    return zip(
-        *np.transpose(
-            np.array(
-                [genSpectrums_dft(xl, w, w_len, dft_func) for xl in xlv]
-            )
+    return tuple(
+        np.transpose(np.array(X))
+        for X in zip(
+            *[genSpectrums_dft(xl, w, N, dft_func) for xl in xlv]
         )
     )
 ################################################################################
@@ -230,65 +238,10 @@ def genSignal(mX, pX, w, M, idft_func = fp.ifft):
 
 
 
-def dft_analizeSinusoid(
-    real = True, A = 1, f = 110, H = 10,
-    N = 50000, dft_func = fp.fft, idft_func = fp.ifft,
-    w = rectangularWindow
-):
-
-    x = (
-        genRealSine(A = A, f = f) if real else
-        genComplexSine(A = A, k = f)
-    )[::H]
-
-    fs = 44100.0
-    x_len = len(x)
-
-    X = abs(dft_func(x))
-    mX, pX = genSpectrums_dft(x, w, N, dft_func = dft_func)
-    y = genSignal(mX, pX, w, x_len, idft_func = idft_func)
-    Y = abs(dft_func(y))
-
-    show_plot('Wave x', np.arange(x_len), np.real(x))
-    show_plot('DFT of wave x', np.arange(x_len), np.real(X))
-    show_plot('Magnitude Spectrum of x', np.arange(0, fs / (2.0 * H), fs / (H * N)), mX)
-    show_plot('Phase Spectrum of x', np.arange(0, fs / (2.0 * H), fs / (H * N)), pX)
-    show_plot('Wave y', np.arange(x_len), np.real(y))
-    show_plot('DFT of wave y', np.arange(x_len), np.real(Y))
-
-
-def dft_analyzeWav(
-    input_filepath, output_filepath = 'test.wav',
-    N = 50000, w = rectangularWindow
-):
-
-    fs, x = read_wavnormalized(input_filepath)
-    x_len = len(x)
-    secs = float(x_len) / float(fs)
-
-    X = abs(fp.fft(x))
-    mX, pX = genSpectrums_dft(x, w, N * secs, dft_func = fp.fft)
-    y = genSignal(mX, pX, w, x_len, idft_func = fp.ifft)
-    Y = abs(fp.fft(y))
-
-    show_plot('Wave x', np.arange(x_len) / float(fs), np.real(x))
-    show_plot('DFT of wave x', np.arange(x_len) / secs, np.real(X))
-    show_plot('Magnitude Spectrum of x', np.arange(0, x_len / 2, float(fs) / float(N)) / secs, mX)
-    show_plot('Phase Spectrum of x', np.arange(0, x_len / 2, float(fs) / float(N)) / secs, pX)
-    show_plot('Wave y', np.arange(x_len) / float(fs), np.real(y))
-    show_plot('DFT of wave y', np.arange(x_len) / secs, np.real(Y))
-
-    write_wavnormalized(output_filepath, y, fs)
-
-
-def stft_analyzeWav(
-    input_filepath, output_filepath = 'test.wav',
-    x_len = 801, window_len = 1024, hop_len = 400, window_func = rectangularWindow
-):
-    fs, x = read_wavnormalized(input_filepath)
-    xmX = genMagnitudeSpectrum_stft(x, window_func, x_len, window_len, hop_len)
-    plt.pcolormesh(xmX)
-    plt.show()
+def timer(f):
+    start = time.time()
+    f()
+    return time.time() - start
 
 
 def dft_test(
@@ -310,7 +263,72 @@ def dft_test(
     Y = abs(dft_func(y))
 
 
-def timer(f):
-    start = time.time()
-    f()
-    return time.time() - start
+def dft_analizeSinusoid(
+    real = True, A = 1, f = 110, H = 10,
+    N = 50000, dft_func = fp.fft, idft_func = fp.ifft,
+    w = rectangularWindow
+):
+
+    x = (
+        genRealSine(A = A, f = f) if real else
+        genComplexSine(A = A, k = f)
+    )[::H]
+
+    fs = 44100.0
+    x_len = len(x)
+
+    X = abs(dft_func(x))
+    mX, pX = genSpectrums_dft(x, w, N, dft_func = dft_func)
+    y = genSignal(mX, pX, w, x_len, idft_func = idft_func)
+    Y = abs(dft_func(y))
+
+    o_time = np.arange(x_len)
+    o_freqSpectrum = np.arange(0, fs / (2.0 * H), fs / (H * N))
+
+    show_plot2d('Wave x', o_time, np.real(x))
+    show_plot2d('DFT of wave x', o_time, np.real(X))
+    show_plot2d('Magnitude Spectrum of x', o_freqSpectrum, mX)
+    show_plot2d('Phase Spectrum of x', o_freqSpectrum, pX)
+    show_plot2d('Wave y', o_time, np.real(y))
+    show_plot2d('DFT of wave y', o_time, np.real(Y))
+
+
+def dft_analyzeWav(
+    input_filepath, output_filepath = 'test.wav',
+    N = 50000, w = rectangularWindow
+):
+
+    fs, x = read_wavnormalized(input_filepath)
+    x_len = len(x)
+    secs = float(x_len) / float(fs)
+
+    X = abs(fp.fft(x))
+    mX, pX = genSpectrums_dft(x, w, N * secs, dft_func = fp.fft)
+    y = genSignal(mX, pX, w, x_len, idft_func = fp.ifft)
+    Y = abs(fp.fft(y))
+
+    o_time = np.arange(x_len) / float(fs)
+    o_freqDft = np.arange(x_len) / secs
+    o_freqSpectrum = np.arange(0, x_len / 2, float(fs) / float(N)) / secs
+
+    show_plot2d('Wave x', o_time, np.real(x))
+    show_plot2d('DFT of wave x', o_freqDft, np.real(X))
+    show_plot2d('Magnitude Spectrum of x', o_freqSpectrum, mX)
+    show_plot2d('Phase Spectrum of x', o_freqSpectrum, pX)
+    show_plot2d('Wave y', o_freqDft, np.real(y))
+    show_plot2d('DFT of wave y', o_time, np.real(Y))
+
+    write_wavnormalized(output_filepath, y, fs)
+
+
+def stft_analyzeWav(
+    input_filepath, output_filepath = 'test.wav',
+    M = 801, N = 1024, H = 400, w = rectangularWindow
+):
+    fs, x = read_wavnormalized(input_filepath)
+    x_len = len(x)
+    secs = float(x_len) / float(fs)
+    xmX, xpX = genSpectrums_stft(x, w, M, N, H)
+    ox, oy = H * np.arange(xmX.shape[1]) / float(fs), fs * np.arange(N / 2) / N
+    show_plot3d('3D magnitude spectrum of x', ox, oy, xmX)
+    show_plot3d('3D phase spectrum of x', ox, oy, np.diff(xpX, axis = 1))
