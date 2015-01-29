@@ -1,10 +1,10 @@
 ﻿import numpy as np
 import sys
-sys.path.append('../../software/models/')
+#sys.path.append('../../software/models/')
 from scipy.fftpack import fft
 import matplotlib.pyplot as plt
 from scipy.signal import get_window
-from dftModel import dftAnal
+#from dftModel import dftAnal
 """
 A3-part-5: FFT size and zero-padding (Optional)
 
