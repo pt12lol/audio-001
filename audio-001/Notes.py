@@ -259,7 +259,7 @@ def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
     hM2 = int(math.floor(M/2))
     spectrums = np.array(zip(np.transpose(xmX), np.transpose(xpX)))
     N = spectrums.shape[2] * 2
-    x_len = (spectrums.shape[0] - 1) * H
+    x_len = spectrums.shape[0] * H
     samples = np.array(
         [H * genSignal_dft(mX, pX, M, idft_func) for mX, pX in spectrums]
     )
@@ -275,7 +275,7 @@ def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
                 ) for i, sample in zip(np.arange(samples.shape[0]), samples)
             ]
         )
-    )[hM2:] / (x_len - hM2)
+    )[hM2:] * N / 2
 ################################################################################
 
 
