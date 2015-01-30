@@ -234,7 +234,7 @@ def genIfft(cutoff):
 
 
 # dft synthesis helpers ########################################################
-def genSignal_dft(mX, pX, w, M, idft_func = fp.ifft):
+def genSignal_dft(mX, pX, M, idft_func = fp.ifft):
     N = len(mX) * 2
     hN = N / 2
     hM1 = int(math.floor((M + 1) / 2))
@@ -247,28 +247,23 @@ def genSignal_dft(mX, pX, w, M, idft_func = fp.ifft):
         )
     )
     dft_buffer = np.real(idft_func(X))
-    xw = np.concatenate(
+    return np.concatenate(
         (dft_buffer[N - hM2:], dft_buffer[:hM1])
     )
-    wM = np.array(
-        [item if item != 0 else np.finfo(float).eps for item in w(M)]
-    )
-    w_sum = sum(wM)
-    return xw * w_sum / wM
 ################################################################################
 
 
 # stft synthesis helpers #######################################################
-def genSignal_stft(xmX, xpX, w, M, H, idft_func = fp.ifft):
+def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
     hM1 = int(math.floor((M+1)/2))
     hM2 = int(math.floor(M/2))
     spectrums = np.array(zip(np.transpose(xmX), np.transpose(xpX)))
     N = spectrums.shape[2] * 2
     x_len = (spectrums.shape[0] - 1) * H
     samples = np.array(
-        [H * genSignal_dft(mX, pX, w, M, idft_func) for mX, pX in spectrums]
+        [H * genSignal_dft(mX, pX, M, idft_func) for mX, pX in spectrums]
     )
-    xw = sum(
+    return sum(
         np.array(
             [
                 np.concatenate(
@@ -281,11 +276,6 @@ def genSignal_stft(xmX, xpX, w, M, H, idft_func = fp.ifft):
             ]
         )
     )[hM2:] / (x_len - hM2)
-    wM = np.array(
-        [item if item != 0 else np.finfo(float).eps for item in w(len(xw))]
-    )
-    w_sum = sum(wM)
-    return xw * w_sum / wM
 ################################################################################
 
 
@@ -296,90 +286,24 @@ def timer(f):
     return time.time() - start
 
 
-def dft_test(
-    real = True, A = 1, f = 110, H = 10,
-    N = 50000, dft_func = fp.fft, idft_func = fp.ifft,
-    w = rectangularWindow
-):
-
-    x = (
-        genRealSine(A = A, f = f) if real else
-        genComplexSine(A = A, k = f)
-    )[::H]
-    
-    x_len = len(x)
-
-    X = abs(dft_func(x))
-    mX, pX = genSpectrums_dft(x, w, N, dft_func = dft_func)
-    y = genSignal_dft(mX, pX, w, x_len, idft_func = idft_func)
-    Y = abs(dft_func(y))
-
-
-def dft_analizeSinusoid(
-    real = True, A = 1, f = 110, H = 10,
-    N = 88200, dft_func = fp.fft, idft_func = fp.ifft,
-    w = rectangularWindow
-):
-
-    x = (
-        genRealSine(A = A, f = f) if real else
-        genComplexSine(A = A, k = f)
-    )[::H]
-
-    fs = 44100.0
-    x_len = len(x)
-
-    X = abs(dft_func(x))
-    mX, pX = genSpectrums_dft(x, w, N, dft_func = dft_func)
-    y = genSignal_dft(mX, pX, w, x_len, idft_func = idft_func)
-    Y = abs(dft_func(y))
-
-    o_time = np.arange(x_len)
-    o_freqSpectrum = np.arange(0, fs / (2.0 * H), fs / (H * N))
-
-    show_plot2d(
-        'Wave x', o_time, np.real(x),
-        labels['t'], labels['A1']
-    )
-    show_plot2d(
-        'DFT of wave x', o_time, np.real(X),
-        labels['f'], labels['A1']
-    )
-    show_plot2d(
-        'Magnitude Spectrum of x', o_freqSpectrum, mX,
-        labels['f'], labels['A2']
-    )
-    show_plot2d(
-        'Phase Spectrum of x', o_freqSpectrum, pX,
-        labels['f'], labels['p']
-    )
-    show_plot2d(
-        'Wave y', o_time, np.real(y),
-        labels['t'], labels['A1']
-    )
-    show_plot2d(
-        'DFT of wave y', o_time, np.real(Y),
-        labels['t'], labels['A1']
-    )
-
-
 def dft_analyzeWav(
-    input_filepath = 'test-src.wav', output_filepath = 'test-dst.wav',
-    N = 88200, w = rectangularWindow
+    input_filepath = 'test-src.wav',
+    output_filepath = 'test-dst.wav',
+    N = 65536, w = rectangularWindow
 ):
 
     fs, x = read_wavnormalized(input_filepath)
-    x_len = len(x)
-    secs = float(x_len) / float(fs)
+    M = len(x)
+    secs = float(M) / float(fs)
 
     X = abs(fp.fft(x))
     mX, pX = genSpectrums_dft(x, w, N * secs, dft_func = fp.fft)
-    y = genSignal_dft(mX, pX, w, x_len, idft_func = fp.ifft)
+    y = genSignal_dft(mX, pX, M, idft_func = fp.ifft)
     Y = abs(fp.fft(y))
 
-    o_time = np.arange(x_len) / float(fs)
-    o_freqDft = np.arange(x_len) / secs
-    o_freqSpectrum = np.arange(0, x_len / 2, float(fs) / float(N)) / secs
+    o_time = np.arange(M) / float(fs)
+    o_freqDft = np.arange(M) / secs
+    o_freqSpectrum = float(fs) * np.arange(N / 2) / float(N)
 
     show_plot2d(
         'Wave x', o_time, np.real(x),
@@ -410,25 +334,25 @@ def dft_analyzeWav(
 
 
 def dft_analyzeWavFragment(
-    input_filepath, t_start = 1, M = 512,
-    N = 512, w = rectangularWindow
+    input_filepath = 'test-src.wav',
+    t_start = 1, M = 801, N = 1024,
+    w = rectangularWindow
 ):
 
     wav_obj = read_wavnormalized(input_filepath)
     fs = wav_obj[0]
     sample_start = t_start * fs
     x = wav_obj[1][sample_start:sample_start + M]
-    x_len = len(x)
-    secs = float(x_len) / float(fs)
+    secs = float(M) / float(fs)
 
     X = abs(fp.fft(x))
     mX, pX = genSpectrums_dft(x, w, N, dft_func = fp.fft)
-    y = genSignal_dft(mX, pX, w, x_len, idft_func = fp.ifft)
+    y = genSignal_dft(mX, pX, M, idft_func = fp.ifft)
     Y = abs(fp.fft(y))
 
-    o_time = np.arange(x_len) / float(fs)
-    o_freqDft = np.arange(x_len) / secs
-    o_freqSpectrum = np.arange(x_len / 2) / secs
+    o_time = np.arange(M) / float(fs)
+    o_freqDft = np.arange(M) / secs
+    o_freqSpectrum = float(fs) * np.arange(N / 2) / float(N)
 
     show_plot2d(
         'Wave x', o_time, np.real(x),
@@ -457,14 +381,16 @@ def dft_analyzeWavFragment(
 
 
 def stft_analyzeWav(
-    input_filepath = 'test-src.wav', output_filepath = 'test-dst.wav',
-    M = 1000, N = 2048, H = 250, w = rectangularWindow
+    input_filepath = 'test-src.wav',
+    output_filepath = 'test-dst.wav',
+    M = 801, N = 2048, H = 250,
+    w = rectangularWindow
 ):
 
     fs, x = read_wavnormalized(input_filepath)
     
     xmX, xpX = genSpectrums_stft(x, w, M, N, H)
-    y = genSignal_stft(xmX, xpX, w, M, H)
+    y = genSignal_stft(xmX, xpX, M, H)
 
     o_timex = np.arange(len(x)) / float(fs)
     o_timey = np.arange(len(y)) / float(fs)
