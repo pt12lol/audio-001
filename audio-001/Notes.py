@@ -46,24 +46,39 @@ def read_wavnormalized(filepath, sec_begin = 0, sec_end = -1):
 
 
 # plot drawing #################################################################
-def show_plot2d(title, x, y):
+labels = {
+    't': 'Time (s)',
+    'A1': 'Amplitude',
+    'A2': 'Amplitude (dB)',
+    'f': 'Frequency (Hz)',
+    'p': 'Phase (rad)'
+}
+
+def show_plot2d(title, x, y, xlabel = '', ylabel = ''):
     y_min = float(min(y))
     y_max = float(max(y))
     y_amp = y_max - y_min
     plt.figure().suptitle(title)
     plt.plot(x, y)
     plt.axis([x[0], x[-1], y_min - 0.3 * y_amp, y_max + 0.3 * y_amp])
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.show()
 
-def show_plot3d(title, x, y, z):
+def show_plot3d(title, x, y, z, xlabel = '', ylabel = '', zlabel = ''):
     plt.figure().suptitle(title)
     plt.pcolormesh(x, y, z)
     plt.axis([x[0], x[-1], y[0], y[-1]])
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.colorbar().set_label(zlabel)
     plt.show()
 
 def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
     fs, x = read_func(filepath, sec_begin, sec_end)
-    show_plot2d(filepath, np.arange(0, sec_end, 1./fs), x)
+    show_plot2d(
+        filepath, np.arange(0, sec_end, 1./fs), x, labels['t'], labels['A1']
+    )
 ################################################################################
 
 
@@ -322,16 +337,34 @@ def dft_analizeSinusoid(
     o_time = np.arange(x_len)
     o_freqSpectrum = np.arange(0, fs / (2.0 * H), fs / (H * N))
 
-    show_plot2d('Wave x', o_time, np.real(x))
-    show_plot2d('DFT of wave x', o_time, np.real(X))
-    show_plot2d('Magnitude Spectrum of x', o_freqSpectrum, mX)
-    show_plot2d('Phase Spectrum of x', o_freqSpectrum, pX)
-    show_plot2d('Wave y', o_time, np.real(y))
-    show_plot2d('DFT of wave y', o_time, np.real(Y))
+    show_plot2d(
+        'Wave x', o_time, np.real(x),
+        labels['t'], labels['A1']
+    )
+    show_plot2d(
+        'DFT of wave x', o_time, np.real(X),
+        labels['f'], labels['A1']
+    )
+    show_plot2d(
+        'Magnitude Spectrum of x', o_freqSpectrum, mX,
+        labels['f'], labels['A2']
+    )
+    show_plot2d(
+        'Phase Spectrum of x', o_freqSpectrum, pX,
+        labels['f'], labels['p']
+    )
+    show_plot2d(
+        'Wave y', o_time, np.real(y),
+        labels['t'], labels['A1']
+    )
+    show_plot2d(
+        'DFT of wave y', o_time, np.real(Y),
+        labels['t'], labels['A1']
+    )
 
 
 def dft_analyzeWav(
-    input_filepath, output_filepath = 'test.wav',
+    input_filepath = 'test-src.wav', output_filepath = 'test-dst.wav',
     N = 88200, w = rectangularWindow
 ):
 
@@ -348,18 +381,83 @@ def dft_analyzeWav(
     o_freqDft = np.arange(x_len) / secs
     o_freqSpectrum = np.arange(0, x_len / 2, float(fs) / float(N)) / secs
 
-    show_plot2d('Wave x', o_time, np.real(x))
-    show_plot2d('DFT of wave x', o_freqDft, np.real(X))
-    show_plot2d('Magnitude Spectrum of x', o_freqSpectrum, mX)
-    show_plot2d('Phase Spectrum of x', o_freqSpectrum, pX)
-    show_plot2d('Wave y', o_time, np.real(y))
-    show_plot2d('DFT of wave y', o_freqDft, np.real(Y))
+    show_plot2d(
+        'Wave x', o_time, np.real(x),
+        labels['t'], labels['A1']
+    )
+    show_plot2d(
+        'DFT of wave x', o_freqDft, np.real(X),
+        labels['f'], labels['A1']
+    )
+    show_plot2d(
+        'Magnitude Spectrum of x', o_freqSpectrum, mX,
+        labels['f'], labels['A2']
+    )
+    show_plot2d(
+        'Phase Spectrum of x', o_freqSpectrum, pX,
+        labels['f'], labels['p']
+    )
+    show_plot2d(
+        'Wave y', o_time, np.real(y),
+        labels['t'], labels['A1']
+    )
+    show_plot2d(
+        'DFT of wave y', o_freqDft, np.real(Y),
+        labels['f'], labels['A1']
+    )
 
     write_wavnormalized(output_filepath, y, fs)
 
 
+def dft_analyzeWavFragment(
+    input_filepath, t_start = 1, M = 512,
+    N = 512, w = rectangularWindow
+):
+
+    wav_obj = read_wavnormalized(input_filepath)
+    fs = wav_obj[0]
+    sample_start = t_start * fs
+    x = wav_obj[1][sample_start:sample_start + M]
+    x_len = len(x)
+    secs = float(x_len) / float(fs)
+
+    X = abs(fp.fft(x))
+    mX, pX = genSpectrums_dft(x, w, N, dft_func = fp.fft)
+    y = genSignal_dft(mX, pX, w, x_len, idft_func = fp.ifft)
+    Y = abs(fp.fft(y))
+
+    o_time = np.arange(x_len) / float(fs)
+    o_freqDft = np.arange(x_len) / secs
+    o_freqSpectrum = np.arange(x_len / 2) / secs
+
+    show_plot2d(
+        'Wave x', o_time, np.real(x),
+        labels['t'], labels['A1']
+    )
+    show_plot2d(
+        'DFT of wave x', o_freqDft, np.real(X),
+        labels['f'], labels['A1']
+    )
+    show_plot2d(
+        'Magnitude Spectrum of x', o_freqSpectrum, mX,
+        labels['f'], labels['A2']
+    )
+    show_plot2d(
+        'Phase Spectrum of x', o_freqSpectrum, pX,
+        labels['f'], labels['p']
+    )
+    show_plot2d(
+        'Wave y', o_time, np.real(y),
+        labels['t'], labels['A1']
+    )
+    show_plot2d(
+        'DFT of wave y', o_freqDft, np.real(Y),
+        labels['f'], labels['A1']
+    )
+
+
 def stft_analyzeWav(
-    input_filepath, output_filepath = 'test.wav',
+    input_filepath = 'test-src.wav', output_filepath = 'test-dst.wav',
     M = 1000, N = 2048, H = 250, w = rectangularWindow
 ):
 
@@ -373,9 +471,21 @@ def stft_analyzeWav(
     ox = H * np.arange(xmX.shape[1]) / float(fs)
     oy = fs * np.arange(N / 2) / N
     
-    show_plot2d('Wave x', o_timex, np.real(x))
-    show_plot3d('3D magnitude spectrum of x', ox, oy, xmX)
-    show_plot3d('3D phase spectrum of x', ox, oy, xpX)
-    show_plot2d('Wave y', o_timey, np.real(y))
+    show_plot2d(
+        'Wave x', o_timex, np.real(x),
+        labels['t'], labels['A1']
+    )
+    show_plot3d(
+        '3D magnitude spectrum of x', ox, oy, xmX,
+        labels['t'], labels['f'], labels['A2']
+    )
+    show_plot3d(
+        '3D phase spectrum of x', ox, oy, xpX,
+        labels['t'], labels['f'], labels['p']
+    )
+    show_plot2d(
+        'Wave y', o_timey, np.real(y),
+        labels['t'], labels['A1']
+    )
 
     write_wavnormalized(output_filepath, y, fs)
