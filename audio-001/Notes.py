@@ -185,12 +185,10 @@ def genMagnitudeSpectrum_stft(x, w, M, N, H, dft_func = fp.fft):
 
 def genPhaseSpectrum_stft(x, w, M, N, H, dft_func = fp.fft):
     xlv = genSamplesOfStft(x, w, M, H, dft_func)
-    return np.diff(
-        np.transpose(
-            np.array(
-                [genPhaseSpectrum_dft(xl, w, N, dft_func) for xl in xlv]
-            )
-        ), axis = 1
+    return np.transpose(
+        np.array(
+            [genPhaseSpectrum_dft(xl, w, N, dft_func) for xl in xlv]
+        )
     )
 
 def genSpectrums_stft(x, w, M, N, H, dft_func = fp.fft):
@@ -303,7 +301,7 @@ def dft_analyzeWav(
 
     o_time = np.arange(M) / float(fs)
     o_freqDft = np.arange(M) / secs
-    o_freqSpectrum = float(fs) * np.arange(N / 2) / float(N)
+    o_freqSpectrum = float(fs) * np.arange(N * secs / 2 - 1) / float(N * secs)
 
     show_plot2d(
         'Wave x', o_time, np.real(x),
