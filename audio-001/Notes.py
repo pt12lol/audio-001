@@ -173,7 +173,7 @@ def genSamplesOfStft(x, w, M, H, dft_func = fp.fft):
     lv = np.arange(len(x) / H + 1)
     wM = w(M)
     w_sum = sum(wM)
-    return np.array([x_ext[l * H:l * H + M] * wM / w_sum for l in lv])
+    return np.array([x_ext[l * H:l * H + M] / w_sum for l in lv])
 
 def genMagnitudeSpectrum_stft(x, w, M, N, H, dft_func = fp.fft):
     xlv = genSamplesOfStft(x, w, M, H, dft_func)
@@ -404,7 +404,7 @@ def stft_analyzeWav(
         labels['t'], labels['f'], labels['A2']
     )
     show_plot3d(
-        '3D phase spectrum of x', ox, oy, xpX,
+        '3D phase spectrum of x', ox, oy, np.diff(xpX, axis = 1),
         labels['t'], labels['f'], labels['p']
     )
     show_plot2d(
