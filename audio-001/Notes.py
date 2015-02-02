@@ -256,7 +256,6 @@ def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
     hM1 = int(math.floor((M+1)/2))
     hM2 = int(math.floor(M/2))
     spectrums = np.array(zip(np.transpose(xmX), np.transpose(xpX)))
-    N = spectrums.shape[2] * 2
     x_len = spectrums.shape[0] * H
     samples = np.array(
         [H * genSignal_dft(mX, pX, M, idft_func) for mX, pX in spectrums]
@@ -273,7 +272,7 @@ def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
                 ) for i, sample in zip(np.arange(samples.shape[0]), samples)
             ]
         )
-    )[hM2:] * N / 2
+    )[hM2:] * M
 ################################################################################
 
 
@@ -404,7 +403,7 @@ def stft_analyzeWav(
         labels['t'], labels['f'], labels['A2']
     )
     show_plot3d(
-        '3D phase spectrum of x', ox, oy, xpX,
+        '3D phase spectrum of x', ox, oy, np.diff(xpX, axis = 0),
         labels['t'], labels['f'], labels['p']
     )
     show_plot2d(
