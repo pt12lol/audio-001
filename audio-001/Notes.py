@@ -45,7 +45,7 @@ def read_wavnormalized(filepath, sec_begin = 0, sec_end = -1):
 ################################################################################
 
 
-# plot drawing #################################################################
+# plots drawing ################################################################
 labels = {
     't': 'Time (s)',
     'A1': 'Amplitude',
@@ -253,8 +253,8 @@ def genSignal_dft(mX, pX, M, idft_func = fp.ifft):
 
 # stft synthesis helpers #######################################################
 def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
-    hM1 = int(math.floor((M+1)/2))
-    hM2 = int(math.floor(M/2))
+    hM1 = int(math.floor((M + 1) / 2))
+    hM2 = int(math.floor(M / 2))
     spectrums = np.array(zip(np.transpose(xmX), np.transpose(xpX)))
     x_len = spectrums.shape[0] * H
     samples = np.array(
@@ -267,7 +267,7 @@ def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
                     (
                         np.zeros(hM2 + i * H),
                         sample,
-                        np.zeros(x_len - i * H - (samples.shape[0] / 2) + hM2)
+                        np.zeros(x_len - i * H - (sample.shape[0] / 2) + hM2)
                     )
                 ) for i, sample in zip(np.arange(samples.shape[0]), samples)
             ]
@@ -392,7 +392,7 @@ def stft_analyzeWav(
     o_timex = np.arange(len(x)) / float(fs)
     o_timey = np.arange(len(y)) / float(fs)
     ox = H * np.arange(xmX.shape[1]) / float(fs)
-    oy = fs * np.arange(N / 2) / N
+    oy = fs * np.arange(xmX.shape[0]) / N#N / 2) / N
     
     show_plot2d(
         'Wave x', o_timex, np.real(x),
