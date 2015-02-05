@@ -171,9 +171,7 @@ def genSamplesOfStft(x, w, M, H, dft_func = fp.fft):
     hM2 = int(math.floor(M / 2))
     x_ext = np.concatenate((np.zeros(hM2), x, np.zeros(hM2)))
     lv = np.arange(len(x) / H + 1)
-    wM = w(M)
-    w_sum = sum(wM)
-    return np.array([x_ext[l * H:l * H + M] * wM / w_sum for l in lv])
+    return np.array([x_ext[l * H:l * H + M] for l in lv])
 
 def genMagnitudeSpectrum_stft(x, w, M, N, H, dft_func = fp.fft):
     xlv = genSamplesOfStft(x, w, M, H, dft_func)
@@ -272,7 +270,7 @@ def genSignal_stft(xmX, xpX, M, H, idft_func = fp.ifft):
                 ) for i, sample in zip(np.arange(samples.shape[0]), samples)
             ]
         )
-    )[hM2:] * M
+    )[hM2:]
 ################################################################################
 
 
