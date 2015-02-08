@@ -54,24 +54,7 @@ labels = {
     'p': 'Phase (rad)'
 }
 
-def show_plots2d(title, x, yv, xlabel = '', ylabel = ''):
-    y_exclNone = [y[y != np.array(None)] for y in yv]
-    y_mins, y_maxs = zip(*
-        [(float(min(y)), float(max(y))) for y in y_exclNone]
-    )
-    y_min = min(y_mins)
-    y_max = max(y_maxs)
-    y_amp = y_max - y_min
-    plt.figure().suptitle(title)
-    plt.axis([x[0], x[-1], y_min - 0.3 * y_amp, y_max + 0.3 * y_amp])
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    for y in yv:
-        m = 'o' if np.any(np.equal(y, None)) else ''
-        plt.plot(x, y, marker = m)
-    plt.show()
-
-def show_plots2d(title, plots, xlabel = '', ylabel = ''):
+def show_plots2d(title, plots, points, xlabel = '', ylabel = ''):
     xv, yv = zip(*plots)
     y_exclNone = [y[y != np.array(None)] for y in yv]
     y_mins, y_maxs = zip(*
@@ -87,8 +70,9 @@ def show_plots2d(title, plots, xlabel = '', ylabel = ''):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     for x, y in plots:
-        m = 'o' if np.any(np.equal(y, None)) else ''
-        plt.plot(x, y, marker = m)
+        plt.plot(x, y, 'b-')
+    for x, y in points:
+        plt.plot(x, y, 'bo')
     plt.show()
 
 def show_plot3d(title, x, y, z, xlabel = '', ylabel = '', zlabel = ''):
@@ -103,7 +87,7 @@ def show_plot3d(title, x, y, z, xlabel = '', ylabel = '', zlabel = ''):
 def show_wavplot(filepath, read_func = read_wav, sec_begin = 0, sec_end = -1):
     fs, x = read_func(filepath, sec_begin, sec_end)
     show_plots2d(
-        filepath, [(np.arange(0, sec_end, 1./fs), x)],
+        filepath, [(np.arange(0, sec_end, 1./fs), x)], [],
         labels['t'], labels['A1']
     )
 ################################################################################
@@ -228,13 +212,30 @@ def genSpectrums_stft(x, w, M, N, H, dft_func = fp.fft):
 
 
 # sinusoidal model #############################################################
-def findPeaks(x, t):
-    candidates = x[1:-1]
-    peaks = np.where(
-        (candidates > t) & (candidates > x[:-2]) & (candidates > x[2:]),
-        candidates, None
+def interpPeak(x, ploc, scale = 1):
+    lval = x[0]
+    pval = x[1]
+    rval = x[2]
+    iploc = ploc + (lval - rval) / (2.0 * (lval - 2 * pval + rval))
+    ipval = pval - (lval - rval) * (iploc - ploc) / 4.0
+    return iploc * scale, ipval
+
+def findPeaks(x, t, scale = 1):
+    return np.array(
+        [
+            ((ploc + 1) * scale, pval)
+            for ploc, pval in enumerate(x[1:-1])
+            if pval > t and pval > x[ploc] and pval > x[ploc + 2]
+        ]
     )
-    return np.concatenate((np.array([None]), peaks, np.array([None])))
+
+def interpPeaks(x, t, scale = 1):
+    return np.array(
+        [
+            interpPeak(x[ploc - 1:ploc + 2], ploc, scale)
+            for ploc, peak in findPeaks(x, t)
+        ]
+    )
 ################################################################################
 
 
@@ -338,30 +339,30 @@ def dft_analyzeWav(
 
     o_time = np.arange(M) / float(fs)
     o_freqDft = np.arange(M) / secs
-    o_freqSpectrum = float(fs) * np.arange(N * secs / 2) / float(N * secs)
+    o_freqSpectrum = float(fs) * np.arange(len(mX)) / float(N)
 
     show_plots2d(
-        'Wave x', [(o_time, x)],
+        'Wave x', [(o_time, x)], [],
         labels['t'], labels['A1']
     )
     show_plots2d(
-        'DFT of wave x', [(o_freqDft, X)],
+        'DFT of wave x', [(o_freqDft, X)], [],
         labels['f'], labels['A1']
     )
     show_plots2d(
-        'Magnitude Spectrum of x', [(o_freqSpectrum, mX)],
+        'Magnitude Spectrum of x', [(o_freqSpectrum, mX)], [],
         labels['f'], labels['A2']
     )
     show_plots2d(
-        'Phase Spectrum of x', [(o_freqSpectrum, pX)],
+        'Phase Spectrum of x', [(o_freqSpectrum, pX)], [],
         labels['f'], labels['p']
     )
     show_plots2d(
-        'Wave y', [(o_time, y)],
+        'Wave y', [(o_time, y)], [],
         labels['t'], labels['A1']
     )
     show_plots2d(
-        'DFT of wave y', [(o_freqDft, Y)],
+        'DFT of wave y', [(o_freqDft, Y)], [],
         labels['f'], labels['A1']
     )
 
@@ -391,38 +392,38 @@ def dft_analyzeWavFragment(
     o_freqSpectrum = float(fs) * np.arange(N / 2) / float(N)
 
     show_plots2d(
-        'Wave x', [(o_time, x)],
+        'Wave x', [(o_time, x)], [],
         labels['t'], labels['A1']
     )
     show_plots2d(
-        'DFT of wave x', [(o_freqDft, X)],
+        'DFT of wave x', [(o_freqDft, X)], [],
         labels['f'], labels['A1']
     )
     show_plots2d(
-        'Magnitude Spectrum of x', [(o_freqSpectrum, mX)],
+        'Magnitude Spectrum of x', [(o_freqSpectrum, mX)], [],
         labels['f'], labels['A2']
     )
     show_plots2d(
-        'Phase Spectrum of x', [(o_freqSpectrum, pX)],
+        'Phase Spectrum of x', [(o_freqSpectrum, pX)], [],
         labels['f'], labels['p']
     )
     show_plots2d(
-        'Magnitude Spectrum of x with its peaks', [
-            (o_freqSpectrum, mX),
-            (o_freqSpectrum, findPeaks(mX, threshold))
-        ], labels['f'], labels['A2']
+        'Magnitude Spectrum of x with its peaks',
+        [(o_freqSpectrum, mX)],
+        interpPeaks(mX, threshold, float(fs) / float(N)),
+        labels['f'], labels['A2']
     )
     show_plots2d(
-        'Phase Spectrum of x with its peaks', [
-            (o_freqSpectrum, pX), (o_freqSpectrum, findPeaks(pX, threshold))
-        ], labels['f'], labels['A2']
+        'Phase Spectrum of x with its peaks',
+        [(o_freqSpectrum, pX)], [],
+        labels['f'], labels['A2']
     )
     show_plots2d(
-        'Wave y', [(o_time, y)],
+        'Wave y', [(o_time, y)], [],
         labels['t'], labels['A1']
     )
     show_plots2d(
-        'DFT of wave y', [(o_freqDft, Y)],
+        'DFT of wave y', [(o_freqDft, Y)], [],
         labels['f'], labels['A1']
     )
 
@@ -445,7 +446,7 @@ def stft_analyzeWav(
     oy = fs * np.arange(xmX.shape[0]) / N
     
     show_plots2d(
-        'Wave x', [(o_timex, x)],
+        'Wave x', [(o_timex, x)], [],
         labels['t'], labels['A1']
     )
     show_plot3d(
@@ -457,7 +458,7 @@ def stft_analyzeWav(
         labels['t'], labels['f'], labels['p']
     )
     show_plots2d(
-        'Wave y', [(o_timey, y)],
+        'Wave y', [(o_timey, y)], [],
         labels['t'], labels['A1']
     )
 
