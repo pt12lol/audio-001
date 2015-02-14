@@ -70,7 +70,7 @@ def show_plots2d(title, plots, points, xlabel = '', ylabel = ''):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     for x, y in plots:
-        plt.plot(x, y, 'b-')
+        plt.plot(x, y)
     for x, y in points:
         plt.plot(x, y, 'bo')
     plt.show()
@@ -236,6 +236,9 @@ def interpPeaks(x, t, scale = 1):
             for ploc, peak in findPeaks(x, t)
         ]
     )
+
+def linearInterp(iloc, x, y):
+    return zip(iloc, np.interp(iloc, x, y))
 ################################################################################
 
 
@@ -371,7 +374,7 @@ def dft_analyzeWav(
 
 def dft_analyzeWavFragment(
     input_filepath = 'test-src.wav',
-    t_start = 1, M = 801, N = 1024,
+    t_start = 0.1, M = 801, N = 1024,
     w = rectangularWindow,
     threshold = -120
 ):
@@ -390,6 +393,9 @@ def dft_analyzeWavFragment(
     o_time = np.arange(M) / float(fs)
     o_freqDft = np.arange(M) / secs
     o_freqSpectrum = float(fs) * np.arange(N / 2) / float(N)
+    
+    ipmag = interpPeaks(mX, threshold, float(fs) / float(N))
+    ipphase = linearInterp(zip(*ipmag)[0], o_freqSpectrum, pX)
 
     show_plots2d(
         'Wave x', [(o_time, x)], [],
@@ -409,13 +415,12 @@ def dft_analyzeWavFragment(
     )
     show_plots2d(
         'Magnitude Spectrum of x with its peaks',
-        [(o_freqSpectrum, mX)],
-        interpPeaks(mX, threshold, float(fs) / float(N)),
+        [(o_freqSpectrum, mX)], ipmag,
         labels['f'], labels['A2']
     )
     show_plots2d(
         'Phase Spectrum of x with its peaks',
-        [(o_freqSpectrum, pX)], [],
+        [(o_freqSpectrum, pX)], ipphase,
         labels['f'], labels['A2']
     )
     show_plots2d(
