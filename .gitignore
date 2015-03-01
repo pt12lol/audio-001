@@ -1,3 +1,4 @@
 test*.wav
 *.pyc
 *.suo
+*.ipynb
